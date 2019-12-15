@@ -2,41 +2,80 @@
 # Syslog server with web interface for Debian 10
 # LAMP + phpmyadmin + rsyslog + Log Analyzer
 
-MYSQLROOTPASS="123"
+PHPMYADMINUSER="pma"
+PHPMYADMINPASS="321"
+SYSLOGDBPASSWORD="Qwerty"
 PMAVER="4.9.2"
 LAVERSION="4.1.7"
 
 export LANG="en_US.UTF-8"
 
-######### DEBCONF
-if [[ "" == $(dpkg-query  -W --showformat='${Status}\n'  debconf-utils | grep "install ok") ]]; then
-    apt -y install debconf-utils
-fi
 
-######### MARIA DB
-if [[ "" == $(dpkg-query  -W --showformat='${Status}\n'  mysql-server mariadb-server | grep "install ok") ]]; then
+
+function check_packages {
+    notinstalled=""
+    if [ $# -eq 0 ]; then echo "Package name(s) required"; fi
+    if [ $# -gt 0 ]; then
+        for packagename in $@; do
+            if [[ "" == $(dpkg-query  -W --showformat='${Status}\n' ${packagename}  2>&1 | grep "install ok") ]]; then
+                notinstalled=${notinstalled}${packagename}" "
+            fi
+        done
+    fi
+    if [[ "" == ${notinstalled} ]]; then
+        echo "true"
+    else
+        echo "${notinstalled}"
+    fi
+}
+
+
+
+######## MARIA DB
+function check_sql {
+    if [[ "true" != $( check_packages  mariadb-server ) && "true" != $( check_packages  mysql-server) ]]; then
+        echo "false"
+    fi
+    if  [[ "true" == $( check_packages  mariadb-server ) ]]; then echo "mariadb"; fi
+    if  [[ "true" == $( check_packages  mysql-server ) ]]; then echo "mysql"; fi
+}
+
+function install_sql {
     apt -y install mariadb-server
-fi
-mysql -uroot -e "UPDATE mysql.user SET Password=PASSWORD('${MYSQLROOTPASS}') WHERE User='root';\
-    DELETE FROM mysql.user WHERE User='';\
-    DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');\
-    DROP DATABASE test;\
-    DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%';\
-    FLUSH PRIVILEGES;"
+#    mysql -uroot -e "UPDATE mysql.user SET Password=PASSWORD('${MYSQLROOTPASS}') WHERE User='root';\
+#    DELETE FROM mysql.user WHERE User='';\
+#    DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');\
+#    DROP DATABASE test;\
+#    DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%';\
+#    FLUSH PRIVILEGES;"
+}
 
 
-
-######### APACHE 
-if [[ "" == $(dpkg-query -W --showformat='${Status}\n' apache2 | grep "install ok") ]]; then
-    apt -y install apache2
-fi
 
 
 ######### PHP
-apt -y  install php libapache2-mod-php php-mysql php-common php-cli php-common php-json php-opcache php-readline php-mbstring
+function check_php {
+    phpnotinstalled=$( check_packages php libapache2-mod-php php-mysql php-common php-cli php-common php-json php-opcache php-readline php-mbstring )
+    if [[ "true" != ${phpnotinstalled} ]]; then
+        echo "${phpnotinstalled}"
+    else
+        echo "true"
+    fi
+}
 
+function install_php {
+    apt -y  install php libapache2-mod-php php-mysql php-common php-cli php-common php-json php-opcache php-readline php-mbstring
+
+}
 
 ######### PHPMYADMIN
+function check_phpmyadmin {
+    if [[ ! -d /var/lib/phpmyadmin/ ]]; then
+        echo "false"
+    fi
+}
+
+function install_phpmyadmin {
 IFS='' read -r -d '' SITECONFIG  <<"EOF"
 Alias /phpmyadmin /usr/share/phpmyadmin
 
@@ -98,7 +137,7 @@ Alias /phpmyadmin /usr/share/phpmyadmin
 EOF
 
 
-wget https://files.phpmyadmin.net/phpMyAdmin/${PMAVER}/phpMyAdmin-${PMAVER}-all-languages.tar.gz
+wget --no-clobber https://files.phpmyadmin.net/phpMyAdmin/${PMAVER}/phpMyAdmin-${PMAVER}-all-languages.tar.gz
 tar -xvf phpMyAdmin-${PMAVER}-all-languages.tar.gz
 rm phpMyAdmin*.gz
 mv phpMyAdmin-* /usr/share/phpmyadmin
@@ -117,17 +156,21 @@ sed -i  "s/${r}/${r}$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32)/g" /usr
 echo "$SITECONFIG" >  /etc/apache2/sites-available/phpmyadmin.conf
 ln -s /etc/apache2/sites-available/phpmyadmin.conf /etc/apache2/sites-enabled/
 service  apache2 restart
+mysql -uroot -e "use mysql; CREATE USER ${PHPMYADMINUSER}@localhost IDENTIFIED BY '${PHPMYADMINPASS}'; GRANT ALL ON *.* TO ${PHPMYADMINUSER}@localhost WITH GRANT OPTION;"
+service mysql restart
 
+}
 
 
 ######### SYSLOG
-if [[ "" == $(dpkg-query  -W --showformat='${Status}\n'  rsyslog-mysql | grep "install ok") ]]; then
-debconf-set-selections << 'END'
+
+function install_rsyslog_mysql {
+debconf-set-selections << END
 rsyslog-mysql	rsyslog-mysql/mysql/admin-pass	password
 # MySQL application password for rsyslog-mysql:
-rsyslog-mysql	rsyslog-mysql/mysql/app-pass	password
-rsyslog-mysql	rsyslog-mysql/password-confirm	password
-rsyslog-mysql	rsyslog-mysql/app-password-confirm	password
+rsyslog-mysql	rsyslog-mysql/mysql/app-pass	password ${SYSLOGDBPASSWORD}
+rsyslog-mysql	rsyslog-mysql/password-confirm	password ${SYSLOGDBPASSWORD}
+rsyslog-mysql	rsyslog-mysql/app-password-confirm	password ${SYSLOGDBPASSWORD}
 # MySQL username for rsyslog-mysql:
 rsyslog-mysql	rsyslog-mysql/db/app-user	string	rsyslog@localhost
 # Back up the database for rsyslog-mysql before upgrading?
@@ -163,29 +206,135 @@ rsyslog-mysql	rsyslog-mysql/internal/reconfiguring	boolean	false
 rsyslog-mysql	rsyslog-mysql/dbconfig-install	boolean	true
 END
 DEBIAN_FRONTEND=noninteractive apt-get install -y rsyslog-mysql
-fi
 
+echo "Creating /etc/rsyslog.d/enable-remote.conf"
 echo "module(load=\"imudp\")" > /etc/rsyslog.d/enable-remote.conf
-echo "input(type=\"imudp\" port=\"514\")" >> /etc/rsyslog.d/enable-remote.conf 
+echo "input(type=\"imudp\" port=\"514\")" >> /etc/rsyslog.d/enable-remote.conf
 echo "module(load=\"imtcp\")" >> /etc/rsyslog.d/enable-remote.conf
-echo "input(type=\"imtcp\" port=\"514\")" >> /etc/rsyslog.d/enable-remote.conf 
+echo "input(type=\"imtcp\" port=\"514\")" >> /etc/rsyslog.d/enable-remote.conf
 service rsyslog restart
 
 
 
-mysql -uroot -p${MYSQLROOTPASS} -e "CREATE DATABASE Syslog_template;"
-mysqldump -uroot -p${MYSQLROOTPASS} Syslog > /tmp/sql.sql
-mysql -uroot -p${MYSQLROOTPASS} Syslog_template < /tmp/sql.sql
-mysql -uroot -p${MYSQLROOTPASS} -e "TRUNCATE TABLE Syslog_template.SystemEvents"
-
-mysql -uroot -p${MYSQLROOTPASS} -e "use mysql; UPDATE user SET plugin='mysql_native_password' WHERE User='root'; FLUSH PRIVILEGES;"
-
+#mysql -uroot -e "CREATE DATABASE Syslog_template;"
+#mysqldump -uroot Syslog > /tmp/sql.sql
+#mysql -uroot Syslog_template < /tmp/sql.sql
+#mysql -uroot -e "TRUNCATE TABLE Syslog_template.SystemEvents"
+}
 
 ######### LOG ANALYZER
-
-wget http://download.adiscon.com/loganalyzer/loganalyzer-${LAVERSION}.tar.gz
+function install_loganalyzer {
+wget --no-clobber http://download.adiscon.com/loganalyzer/loganalyzer-${LAVERSION}.tar.gz
 tar -xvf loganalyzer-${LAVERSION}.tar.gz
 rm loganalyzer-${LAVERSION}.tar.gz
 cp -r loganalyzer-4.1.7/src/* /var/www/html/
 rm /var/www/html/index.html
 chown www-data:www-data -R /var/www/html/
+}
+
+
+####
+## MAIN
+####
+instaldebconf="false"
+installmariadb="false"
+installapache="false"
+installphp="false"
+instalphpmyadmin="false"
+installrsyslog="false"
+
+
+printf "Checking debconf-utils..."
+check=$( check_packages debconf-utils )
+if [[ $check != "true" ]]; then
+    echo "......debconf-utils not found and will be installed"
+    instaldebconf="true"
+else
+    echo "......found!"
+fi
+
+printf "Checking sql..."
+check=$( check_sql )
+case ${check} in 
+    false)
+        echo "................MariaDB or MySQL are not found. MariaDB will be installed"
+        installmariadb="true"
+        ;;
+    mysql)
+        echo "................MySQL found, it will be used during installation"
+        ;;
+    mariadb)
+        echo "................MariaDB found, it will be used during installation"
+        ;;
+esac
+
+printf "Checking apache..."
+check=$( check_packages apache2 )
+if [[ $check != "true" ]]; then
+    echo ".............apache not found and will be installed"
+    installapache="true"
+else
+    echo ".............found!"
+fi
+
+
+printf "Checking php..."
+check=$( check_php )
+if [[ $check != "true" ]]; then
+    echo "................not found and will be installed: ${check}"
+    installphp="true"
+    phptoinstall=${check}
+else
+    echo "................found!"
+fi
+
+printf "Checking rsyslog-mysql..."
+check=$( check_packages rsyslog-mysql )
+if [[ $check != "true" ]]; then
+    echo "......rsyslog-mysql not found and will be installed"
+    installrsyslog="true"
+else
+    echo "......found!"
+fi
+
+
+printf "Checking phpmyadmin..."
+check=$( check_phpmyadmin )
+if [[ $check == "false" ]]; then
+    echo ".........phpMyAdmin not found in /var/lib/phpmyadmin/"
+    while true; do
+        read -p "Do you wish to install phpmyadmin? (y/n)" yn
+        case $yn in
+            [Yy] ) instalphpmyadmin="true"; break;;
+            [Nn] ) break;;
+            * ) echo "Please answer [y]es or [n]o.";;
+        esac
+    done
+else
+    echo ".........found!"
+fi
+
+
+echo ""
+echo "This file(s) should be downloaded:"
+if [[ ${instalphpmyadmin} != "false" ]]; then echo "https://files.phpmyadmin.net/phpMyAdmin/${PMAVER}/phpMyAdmin-${PMAVER}-all-languages.tar.gz" ; fi
+echo "http://download.adiscon.com/loganalyzer/loganalyzer-${LAVERSION}.tar.gz"
+echo "You can place this file(s) into current directory manually if you have not an Internet connection."
+echo "Debian repository must be accessible!"
+
+echo ""
+read -p "Ok, let's do it. Press ENTER to install, CTRL-C - to abort."
+
+
+
+# INSTALL
+apt update
+if [[ ${instaldebconf} != "false" ]]; then apt -y install debconf-utils ; fi
+if [[ ${installmariadb} != "false" ]]; then install_sql ; fi
+if [[ ${installapache} != "false" ]]; then apt -y install apache2 ; fi
+if [[ ${installphp} != "false" ]]; then  apt -y install ${phptoinstall} ; fi
+if [[ ${installrsyslog} != "false" ]]; then  install_rsyslog_mysql  ; fi
+
+installrsyslog
+if [[ ${instalphpmyadmin} != "false" ]]; then install_phpmyadmin ; fi
+install_loganalyzer
