@@ -214,7 +214,7 @@ echo "module(load=\"imtcp\")" >> /etc/rsyslog.d/enable-remote.conf
 echo "input(type=\"imtcp\" port=\"514\")" >> /etc/rsyslog.d/enable-remote.conf
 service rsyslog restart
 
-
+echo "17 2     * * *     root mysql -uroot -e 'use Syslog; DELETE FROM SystemEvents WHERE ReceivedAt < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 365 DAY);'" > /etc/cron.d/rsyslog_mysql
 
 #mysql -uroot -e "CREATE DATABASE Syslog_template;"
 #mysqldump -uroot Syslog > /tmp/sql.sql
