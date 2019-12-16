@@ -230,6 +230,10 @@ rm loganalyzer-${LAVERSION}.tar.gz
 cp -r loganalyzer-4.1.7/src/* /var/www/html/
 rm /var/www/html/index.html
 chown www-data:www-data -R /var/www/html/
+
+#disable new version check during logon into admin panel
+r="\$content\['UPDATEURL'\] = \"http://loganalyzer.adiscon.com/files/version.txt\";"
+sed -i  "s|${r}|\$content\['UPDATEURL'\] = \"\";|g"  /var/www/html/include/functions_common.php
 }
 
 
