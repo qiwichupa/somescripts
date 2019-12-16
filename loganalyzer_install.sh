@@ -10,8 +10,6 @@ LAVERSION="4.1.7"
 
 export LANG="en_US.UTF-8"
 
-
-
 function check_packages {
     notinstalled=""
     if [ $# -eq 0 ]; then echo "Package name(s) required"; fi
@@ -55,7 +53,7 @@ function install_sql {
 
 ######### PHP
 function check_php {
-    phpnotinstalled=$( check_packages php libapache2-mod-php php-mysql php-common php-cli php-common php-json php-opcache php-readline php-mbstring )
+    phpnotinstalled=$( check_packages php libapache2-mod-php php-mysql php-common php-cli  php-json php-opcache php-readline php-mbstring )
     if [[ "true" != ${phpnotinstalled} ]]; then
         echo "${phpnotinstalled}"
     else
@@ -63,10 +61,6 @@ function check_php {
     fi
 }
 
-function install_php {
-    apt -y  install php libapache2-mod-php php-mysql php-common php-cli php-common php-json php-opcache php-readline php-mbstring
-
-}
 
 ######### PHPMYADMIN
 function check_phpmyadmin {
@@ -224,12 +218,15 @@ echo "17 2     * * *     root mysql -uroot -e 'use Syslog; DELETE FROM SystemEve
 
 ######### LOG ANALYZER
 function install_loganalyzer {
-wget --no-clobber http://download.adiscon.com/loganalyzer/loganalyzer-${LAVERSION}.tar.gz
+wget http://download.adiscon.com/loganalyzer/loganalyzer-${LAVERSION}.tar.gz
 tar -xvf loganalyzer-${LAVERSION}.tar.gz
 rm loganalyzer-${LAVERSION}.tar.gz
-cp -r loganalyzer-4.1.7/src/* /var/www/html/
+cp -r loganalyzer-${LAVERSION}/src/* /var/www/html/
 rm /var/www/html/index.html
 chown www-data:www-data -R /var/www/html/
+
+#create new db for loganalyzer user and settings with rsyslog user as admin
+mysql -uroot -e "create database loganalyzer; grant all privileges on loganalyzer.* to rsyslog@localhost"
 
 #disable new version check during logon into admin panel
 r="\$content\['UPDATEURL'\] = \"http://loganalyzer.adiscon.com/files/version.txt\";"
