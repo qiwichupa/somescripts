@@ -10,6 +10,8 @@ LAVERSION="4.1.7"
 
 export LANG="en_US.UTF-8"
 
+
+
 function check_packages {
     notinstalled=""
     if [ $# -eq 0 ]; then echo "Package name(s) required"; fi
@@ -64,7 +66,7 @@ function check_php {
 
 ######### PHPMYADMIN
 function check_phpmyadmin {
-    if [[ ! -d /var/lib/phpmyadmin/ ]]; then
+    if [[ ! -d /usr/share/phpmyadmin/ ]]; then
         echo "false"
     fi
 }
@@ -131,10 +133,10 @@ Alias /phpmyadmin /usr/share/phpmyadmin
 EOF
 
 
-wget --no-clobber https://files.phpmyadmin.net/phpMyAdmin/${PMAVER}/phpMyAdmin-${PMAVER}-all-languages.tar.gz
-tar -xvf phpMyAdmin-${PMAVER}-all-languages.tar.gz
-rm phpMyAdmin*.gz
-mv phpMyAdmin-* /usr/share/phpmyadmin
+if [ ! -f phpMyAdmin-${PMAVER}-all-languages.tar.gz ]; then wget https://files.phpmyadmin.net/phpMyAdmin/${PMAVER}/phpMyAdmin-${PMAVER}-all-languages.tar.gz; fi
+tar -xf phpMyAdmin-${PMAVER}-all-languages.tar.gz
+mkdir /usr/share/phpmyadmin
+cp -r phpMyAdmin-${PMAVER}-all-languages/* /usr/share/phpmyadmin
 mkdir -p /var/lib/phpmyadmin/tmp
 chown -R www-data:www-data /var/lib/phpmyadmin
 mkdir /etc/phpmyadmin/
@@ -218,10 +220,10 @@ echo "17 2     * * *     root mysql -uroot -e 'use Syslog; DELETE FROM SystemEve
 
 ######### LOG ANALYZER
 function install_loganalyzer {
-wget http://download.adiscon.com/loganalyzer/loganalyzer-${LAVERSION}.tar.gz
-tar -xvf loganalyzer-${LAVERSION}.tar.gz
-rm loganalyzer-${LAVERSION}.tar.gz
+if [ ! -f loganalyzer-${LAVERSION}.tar.gz ]; then wget http://download.adiscon.com/loganalyzer/loganalyzer-${LAVERSION}.tar.gz; fi
+tar -xf loganalyzer-${LAVERSION}.tar.gz
 cp -r loganalyzer-${LAVERSION}/src/* /var/www/html/
+rm -rf ./loganalyzer-${LAVERSION}/
 rm /var/www/html/index.html
 chown www-data:www-data -R /var/www/html/
 
@@ -248,7 +250,7 @@ installrsyslog="false"
 printf "Checking debconf-utils..."
 check=$( check_packages debconf-utils )
 if [[ $check != "true" ]]; then
-    echo "......debconf-utils not found and will be installed"
+    echo "......will be installed"
     instaldebconf="true"
 else
     echo "......found!"
@@ -258,7 +260,7 @@ printf "Checking sql..."
 check=$( check_sql )
 case ${check} in 
     false)
-        echo "................MariaDB or MySQL are not found. MariaDB will be installed"
+        echo "................will be installed: MariaDB"
         installmariadb="true"
         ;;
     mysql)
@@ -272,7 +274,7 @@ esac
 printf "Checking apache..."
 check=$( check_packages apache2 )
 if [[ $check != "true" ]]; then
-    echo ".............apache not found and will be installed"
+    echo ".............will be installed"
     installapache="true"
 else
     echo ".............found!"
@@ -282,7 +284,7 @@ fi
 printf "Checking php..."
 check=$( check_php )
 if [[ $check != "true" ]]; then
-    echo "................not found and will be installed: ${check}"
+    echo "................will be installed: ${check}"
     installphp="true"
     phptoinstall=${check}
 else
@@ -292,7 +294,7 @@ fi
 printf "Checking rsyslog-mysql..."
 check=$( check_packages rsyslog-mysql )
 if [[ $check != "true" ]]; then
-    echo "......rsyslog-mysql not found and will be installed"
+    echo "......will be installed"
     installrsyslog="true"
 else
     echo "......found!"
@@ -302,9 +304,10 @@ fi
 printf "Checking phpmyadmin..."
 check=$( check_phpmyadmin )
 if [[ $check == "false" ]]; then
-    echo ".........phpMyAdmin not found in /var/lib/phpmyadmin/"
+    echo ".........not found in /usr/share/phpmyadmin/"
+    echo
     while true; do
-        read -p "Do you wish to install phpmyadmin? (y/n)" yn
+        read -p "Do you wish to install phpmyadmin? (y/n): " yn
         case $yn in
             [Yy] ) instalphpmyadmin="true"; break;;
             [Nn] ) break;;
@@ -316,14 +319,14 @@ else
 fi
 
 
-echo ""
+echo
 echo "This file(s) should be downloaded:"
 if [[ ${instalphpmyadmin} != "false" ]]; then echo "https://files.phpmyadmin.net/phpMyAdmin/${PMAVER}/phpMyAdmin-${PMAVER}-all-languages.tar.gz" ; fi
 echo "http://download.adiscon.com/loganalyzer/loganalyzer-${LAVERSION}.tar.gz"
 echo "You can place this file(s) into current directory manually if you have not an Internet connection."
 echo "Debian repository must be accessible!"
 
-echo ""
+echo
 read -p "Ok, let's do it. Press ENTER to install, CTRL-C - to abort."
 
 
@@ -339,3 +342,31 @@ if [[ ${installrsyslog} != "false" ]]; then  install_rsyslog_mysql  ; fi
 installrsyslog
 if [[ ${instalphpmyadmin} != "false" ]]; then install_phpmyadmin ; fi
 install_loganalyzer
+
+serverip=$(ip addr show | grep -o "inet [0-9]*\.[0-9]*\.[0-9]*\.[0-9]*" | grep -o "[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*" | grep -v "^127.0.0.1" | head -n 1)
+echo
+echo
+echo Installation complete
+echo
+if [[ ${instalphpmyadmin} != "false" ]]; then 
+    echo "phpmyadmin address: http://${serverip}/phpmyadmin"
+    echo "             login:${PHPMYADMINUSER}"
+    echo "          password:${PHPMYADMINPASS}"
+    echo
+fi
+echo "Open IP address of this server in web-browser (http://${serverip}/)"
+echo and use next settings for wizard:
+echo
+echo "User Database Options (optional)"
+echo "Enable User Database: Yes"
+echo "       Database User: rsyslog"
+echo "   Database Password: ${SYSLOGDBPASSWORD}"
+echo
+echo "First Syslog Source"
+echo "                        Source Type: MYSQL Native"
+echo "     Database Name (case-sensitive): Syslog"
+echo "Database Tablename (case-sensitive): SystemEvents"
+echo "                      Database User: rsyslog"
+echo "                  Database Password: ${SYSLOGDBPASSWORD}"
+echo "                Enable Row Counting: Yes"
+
