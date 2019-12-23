@@ -10,10 +10,11 @@ import ipaddress
 import logging
 
 login = "login"
-password = "pa$$word"
+password = "pass"
+enablePassword = "password"
 startip = "192.168.1.1"
-endip   = "192.168.1.20"
-timeout = "2"
+endip   = "192.168.1.10"
+timeout = "5"
 
 logname = "backup.log"
 loglevel = logging.INFO # DEBUG,INFO,WARNING,ERROR,CRITICAL
@@ -44,7 +45,7 @@ class CTerm:
     """Cisco console"""
 
     def __init__(self, ip, password,  login=None, enablePassword=None, timeout="5"):
-        self.answer = ">"
+        self.mode = ""
         self.ip = ip
         self.password = password
         self.login = login
@@ -54,24 +55,76 @@ class CTerm:
         try:
             self.terminal = telnetlib.Telnet()
             self.terminal.open(self.ip, 23, self.timeout)
-        except:
-            raise Exception("Connection timeout")
-        else:
-            self.cisco_login()
-
-    def cisco_login(self):
-        try:
-            self.terminal.read_until("Username: ".encode("utf-8"))
-            self.enter(login, "Password: ")
-            self.enter(password,"#")
-            self.answer = "#"
-            self.enter("terminal length 0")
         except Exception as e:
-            print("Login error: " + e)
+            raise Exception("Connection error ({}): {} ".format(self.ip, str(e)))
+        else:
+            self.cisco_login =  self.telnet_cisco_login
+            self.enter = self.telnet_enter
+            self.try_enable = self.telnet_try_enable
+            try:
+                self.cisco_login()
+            except:
+                raise
 
-    def enter(self, message, answer=None, timeout=None, loginProcedure=None):
+    def telnet_cisco_login(self):
+        try:
+            lpr = self.terminal.expect([b"Username: ",
+                                                         b"Password: "])
+            if lpr[0] == 0:
+                """ Username and password authentication"""
+                login = self.login + "\n"
+                password = self.password + "\n"
+                self.terminal.write(login.encode("utf-8"))
+                self.terminal.read_until("Password: ".encode("utf-8"))
+                self.terminal.write(password.encode("utf-8"))
+                cpr = self.terminal.expect([b">", b"#", b"Username: "])
+                if cpr[0] == 0 :
+                    self.mode = ">"
+                    self.enter("terminal length 0")
+                elif cpr[0] == 1:
+                    self.mode = "#"
+                    self.enter("terminal length 0")
+                elif cpr[0] == 2:
+                    raise Exception("Invalid login or password")
+            elif lpr[0] == 1:
+                """ Password only authentication"""
+                password = self.password + "\n"
+                self.terminal.write(password.encode("utf-8"))
+                cpr = self.terminal.expect([b">", b"#", b"Password: "])
+                if cpr[0] == 0 :
+                    self.mode = ">"
+                    self.enter("terminal length 0")
+                elif cpr[0] == 1:
+                    self.mode = "#"
+                    self.enter("terminal length 0")
+                elif cpr[0] == 2:
+                    raise Exception("Invalid password")
+                
+        except Exception as e:
+            raise Exception("Login error ({}): {} ".format(self.ip, str(e)))
+
+    def telnet_try_enable(self):
+        if self.mode == ">" and self.enablePassword is not None:
+            try:
+                enablePassword = self.enablePassword + "\n"
+                self.enter("enable", "Password: ")
+                self.terminal.write(enablePassword.encode("utf-8"))
+                epr = self.terminal.expect([b"#", b"Password: "])
+                if epr[0] == 0:
+                    self.mode = "#"
+                elif epr[0] == 1:
+                    raise Exception("Invalid enable password")
+            except Exception as e:
+                raise Exception("Enable error ({}): {} ".format(self.ip, str(e)))
+        elif  self.mode == ">" and self.enablePassword is None:
+            raise Exception("Enable error ({}): enable password is not set ".format(self.ip))
+            
+            
+        
+
+    def telnet_enter(self, message, answer=None, timeout=None, loginProcedure=None):
         if answer == None:
-            answer = self.answer
+            answer = self.mode
         if timeout == None:
             timeout = self.timeout
         command = message + "\n"
@@ -85,7 +138,6 @@ class CTerm:
         config = config[config.find('!'):]
         while config.startswith("!"):
             config = "\n".join(config.split("\n")[1:])
-        #config = "\n".join(config.split("\n")[:-1])
         return config
 
     def show_ip(self):
@@ -112,16 +164,17 @@ logging.basicConfig(handlers=[logging.FileHandler(logfile, 'a', 'utf-8-sig')],
 logger = logging.getLogger(name="main")
 sys.stdout = LoggerWriter(logger.warning)
 sys.stderr = LoggerWriter(logger.warning)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 for ipaddr in range(int(start_ip), int(end_ip) +1):
     ipStr = str(ipaddress.IPv4Address(ipaddr))
     logger.debug(ipStr)
     try:
-        cisco = CTerm(ipStr, password, login, timeout=timeout)
+        cisco = CTerm(ipStr, password, login, enablePassword,  timeout=timeout)
+        cisco.try_enable()
     except Exception as e:
-        logger.debug(e)
+        logger.debug(str(e))
     else:
         try:
             backupdir = os.path.join(workdir, ipStr)
@@ -161,5 +214,3 @@ for ipaddr in range(int(start_ip), int(end_ip) +1):
                     logger.info("New config file saved: " + newconffile)
                     os.system(diff_cmd + " " + lastconffile + " " + newconffile + " > " + newconffile + ".diff")
                     logger.debug("Diff saved: " + newconffile + ".diff")
-
-
