@@ -183,10 +183,12 @@ for ipaddr in range(int(start_ip), int(end_ip) +1):
             print(e)
         dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         newconffile = os.path.join(backupdir, dt + ".conf")
+        tmpconffile = os.path.join(workdir, dt + ".conf")
         config = cisco.get_config()
         try:
             lastconffile = sorted(glob.glob(backupdir+"/*.conf"))[-1]
         except:
+            logger.debug("There is no saved config file for this device")
             try:
                 with open(newconffile, "w") as f:
                     f.write(config)
@@ -195,22 +197,27 @@ for ipaddr in range(int(start_ip), int(end_ip) +1):
             else:
                 logger.info("New config file saved: " + newconffile)
         else:
-            logger.debug("Last config file found: " + lastconffile)
+            logger.debug("Previously created config file found: " + lastconffile)
             try:
-                with open(newconffile, "w") as f:
+                with open(tmpconffile, "w") as f:
                     f.write(config)
             except Exception as e:
-                logger.error("Fail to write new config file: " + e)
+                logger.error("Fail to write tmp config file: " + e)
             else:
-                logger.debug("Previously created backup was found, checking md5")
-                with open(newconffile, "rb") as f:
-                    newhash = hashlib.md5(f.read()).hexdigest()
+                logger.debug("Config saved to temporary config file: " + tmpconffile)
+                logger.debug("Checking md5")
+                with open(tmpconffile, "rb") as f:
+                    tmphash = hashlib.md5(f.read()).hexdigest()
                 with open(lastconffile, "rb") as f:
                     oldhash = hashlib.md5(f.read()).hexdigest()
-                if newhash == oldhash:
-                    os.remove(newconffile)
+                if tmphash == oldhash:
                     logger.debug("Config was not changed")
+                    os.remove(tmpconffile)
+                    logger.debug("Temporary config file removed")
                 else:
+                    logger.debug("Config was changed")
+                    os.rename(tmpconffile, newconffile)
+                    logger.debug("Temporary config file moved to device folder")
                     logger.info("New config file saved: " + newconffile)
                     os.system(diff_cmd + " " + lastconffile + " " + newconffile + " > " + newconffile + ".diff")
                     logger.debug("Diff saved: " + newconffile + ".diff")
