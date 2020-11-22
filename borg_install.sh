@@ -1,7 +1,6 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 
 # SETTINGS
-# ssh user
 sshuser=borg
 shdir=borg
 
@@ -16,6 +15,10 @@ borgversion="1.1.14"
 key=borg_id_rsa
 keypub=borg_id_rsa.pub
 
+
+# You must charge this script with ssh keys before deploy
+# or connect to remote repository.
+# Run script with -h to see details.
 read -d '' borg_id_rsa << EOF
 EOF
 
@@ -107,6 +110,10 @@ do
 key="$1"
 
 case $key in
+    -h|--help)
+    SHOWHELP=true
+    shift # past argument
+    ;;
     -r|--role)
     ROLE="$2"
     shift # past argument
@@ -120,11 +127,15 @@ case $key in
     ROLE=server
     shift # past argument
     ;;
-     -g|--gen-keys)
+    -g|--gen-keys)
     GENKEYS=true
     shift # past argument
     ;;
-     -p|--pub-key)
+    --clean-keys)
+    CLEANKEYS=true
+    shift # past argument
+    ;;
+    -p|--pub-key)
     PUBKEY="$2"
     shift # past argument
     shift # past value
@@ -146,6 +157,28 @@ done
 set -- "${POSITIONAL[@]}"
 
 
+if [[ $SHOWHELP  ]]; then
+read -d '' help << EOF
+Usage:
+
+    $(basename $0) -s,--server -- deploy server
+    $(basename $0) -c,--client -- deploy client
+
+Before deploying server or client with connection to remote storage,
+you must charge this script with your ssh-keys:
+
+    $(basename $0) -k /path/to/private_key -p /path/to/public_key
+
+or generate new keys:
+
+    $(basename $0) -g
+
+in both ways keys will be encoded as base64 and saved right into this script.
+EOF
+
+echo "$help"
+fi
+
 
 if [[ $ROLE = "client" ]];then
 	read -p "enter backup repository [${default_bakrepo}]: " bakrepo
@@ -154,9 +187,17 @@ if [[ $ROLE = "client" ]];then
 	if [ -z ${mountpoint} ]; then mountpoint=${default_mountpoint}; fi
 
 	if [[ "${bakrepo}" =~ .*:.* ]]; then
-		mkdir -p "${HOME}"/.ssh
-		base64 -d <<<  ${borg_id_rsa} > "${HOME}/.ssh/borg_id_rsa"
-		chmod 600 "${HOME}/.ssh/borg_id_rsa"
+		if [[ $(echo "${borg_id_rsa}" | wc -l) > 1 && $(echo "${borg_id_rsa_pub}" | wc -l) > 1 ]] ; then
+			mkdir -p "${HOME}"/.ssh
+			base64 -d <<<  ${borg_id_rsa} > "${HOME}/.ssh/borg_id_rsa"
+			chmod 600 "${HOME}/.ssh/borg_id_rsa"
+		else
+			echo
+			echo It seems you want to use remote repository, but SSH KEYS NOT FOUND.
+			echo Use "$(basename $0) -h" to check information about ssh keys.
+			echo
+			exit;
+		fi
 
 		sshconfig="$HOME/.ssh/config"
 		host=$(echo $bakrepo | cut -d ':' -f1)
@@ -221,6 +262,16 @@ fi
 
 
 if [[ $ROLE = "server" ]]; then
+	if [[ $(echo "${borg_id_rsa}" | wc -l) > 1 && $(echo "${borg_id_rsa_pub}" | wc -l) > 1 ]] ; then
+		echo
+	else
+		echo
+		echo You want to deploy server for remote repository, but SSH KEYS NOT FOUND.
+		echo Use "$(basename $0) -h" to check information about ssh keys.
+		echo
+		exit;
+	fi
+
 	rm /usr/local/bin/borg
 	echo downloading borg to /usr/local/bin/borg
 	if [ -z ${alt_download_link} ]; then
@@ -230,7 +281,7 @@ if [[ $ROLE = "server" ]]; then
 	fi;
 	chmod +x /usr/local/bin/borg || exit;
 
-	useradd -m ${sshuser}
+	useradd -m ${sshuser} || exit;
 	mkdir ~${sshuser}/.ssh
 	base64 -d <<<  ${borg_id_rsa_pub} > "~${sshuser}/.ssh/borg_id_rsa.pub"
 	echo "command=\"/usr/local/bin/borg serve\" $(cat ~${sshuser}/.ssh/borg_id_rsa.pub)" > ~${sshuser}/.ssh/authorized_keys
@@ -263,4 +314,11 @@ if [[  $GENKEYS ]]; then
 	key=$(base64 $PRIVATEKEY | sed -z 's/\n/\\n/g' | sed -e 's/\\n$//g')
 	sed  -e "/^read -d '' borg_id_rsa << EOF$/,/^EOF$/c\read -d '' borg_id_rsa << EOF\n${key}\nEOF" -i $(basename "$0")
 fi
+
+if [[  $CLEANKEYS ]]; then
+
+	sed  -e "/^read -d '' borg_id_rsa_pub << EOF$/,/^EOF$/c\read -d '' borg_id_rsa_pub << EOF\nEOF" -i $(basename "$0")
+	sed  -e "/^read -d '' borg_id_rsa << EOF$/,/^EOF$/c\read -d '' borg_id_rsa << EOF\nEOF" -i $(basename "$0")
+fi
+
 
