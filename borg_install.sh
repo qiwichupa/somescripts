@@ -1,19 +1,22 @@
 #!/usr/bin/env bash
 
-# SETTINGS
-sshuser=borg
-shdir=borg
+# SETTINGS (you can leave all of them as is)
 
-default_bakrepo=backup:qiwinote_bak
+
+default_bakrepo=server:repo
 default_mountpoint=/mnt/backup
 default_hostname=192.168.1.2
 
+# Uncomment and edit IF you want to set alternate url for borg binary:
 # alt_download_link=http://my.server.local/borg_bin
 
 
+# You can leave this as is:
 borgversion="1.1.14"
 key=borg_id_rsa
 keypub=borg_id_rsa.pub
+shdir=borg
+sshuser=borg
 
 
 # You must charge this script with ssh keys before deploy
@@ -26,81 +29,87 @@ read -d '' borg_id_rsa_pub << EOF
 EOF
 
 read -d ''  backup_blkdev_create_sh << EOF
-IyEvdXNyL2Jpbi9lbnYgYmFzaAoKIyBTRVRUSU5HUwpiYWtyZXBvPSJiYWNrdXA6cWl3aW5vdGVf
-YmFrIgpESVNLPS9kZXYvc2RhCmJha3ByZWZpeD1mdWxscWl3aW5vdGUKCmV4cG9ydCBMQU5HPWVu
-X1VTLlVURjgKCkhFQURFUl9TSVpFPSQoc2ZkaXNrIC1sbyBTdGFydCAkRElTSyB8IGdyZXAgLUEx
-IC1QICdTdGFydCQnIHwgdGFpbCAtbjEgfCB4YXJncyBlY2hvKQpQQVJUSVRJT05TPSQoc2ZkaXNr
-IC1sbyBEZXZpY2UsVHlwZSAkRElTSyB8IHNlZCAtZSAnMSwvRGV2aWNlXHMqVHlwZS9kJykKZGQg
-aWY9JERJU0sgY291bnQ9JEhFQURFUl9TSVpFIHwgYm9yZyBjcmVhdGUgLS1zdGF0cyAgJHtiYWty
-ZXBvfTo6JHtiYWtwcmVmaXh9LXBhcnRpbmZvIC0KIyBiYWNrdXAgbnRmcyBwYXJ0aXRpb25zOgpl
-Y2hvICIkUEFSVElUSU9OUyIgfCBncmVwIE5URlMgfCBjdXQgLWQnICcgLWYxIHwgd2hpbGUgcmVh
-ZCB4OyBkbwogICAgUEFSVE5VTT0kKGVjaG8gJHggfCBncmVwIC1FbyAiWzAtOV0rJCIpCiAgICBu
-dGZzY2xvbmUgLXNvIC0gJHggfCBib3JnIGNyZWF0ZSAtLXN0YXRzICAgJHtiYWtyZXBvfTo6JHti
-YWtwcmVmaXh9LXBhcnQkUEFSVE5VTSAtCmRvbmUKIyBiYWNrdXAgbm9uLU5URlMgcGFydGl0aW9u
-czoKI2VjaG8gIiRQQVJUSVRJT05TIiB8IGdyZXAgLXYgTlRGUyB8IGN1dCAtZCcgJyAtZjEgfCB3
-aGlsZSByZWFkIHg7IGRvCiMgICAgUEFSVE5VTT0kKGVjaG8gJHggfCBncmVwIC1FbyAiWzAtOV0r
-JCIpCiMgICAgYm9yZyBjcmVhdGUgLS1yZWFkLXNwZWNpYWwgLS1zdGF0cyAgJHtiYWtyZXBvfTo6
-JHtiYWtwcmVmaXh9LXBhcnQkUEFSVE5VTSAkeAojZG9uZQo=
+IyEvdXNyL2Jpbi9lbnYgYmFzaAoKIyBTRVRUSU5HUwpiYWtyZXBvPXJlcG8KRElTSz0vZGV2L3Nk
+YQpiYWtwcmVmaXg9cHJlZml4CgpleHBvcnQgTEFORz1lbl9VUy5VVEY4CgpIRUFERVJfU0laRT0k
+KHNmZGlzayAtbG8gU3RhcnQgJERJU0sgfCBncmVwIC1BMSAtUCAnU3RhcnQkJyB8IHRhaWwgLW4x
+IHwgeGFyZ3MgZWNobykKUEFSVElUSU9OUz0kKHNmZGlzayAtbG8gRGV2aWNlLFR5cGUgJERJU0sg
+fCBzZWQgLWUgJzEsL0RldmljZVxzKlR5cGUvZCcpCmRkIGlmPSRESVNLIGNvdW50PSRIRUFERVJf
+U0laRSB8IGJvcmcgY3JlYXRlIC0tc3RhdHMgICR7YmFrcmVwb306OiR7YmFrcHJlZml4fS1wYXJ0
+aW5mbyAtCiMgYmFja3VwIG50ZnMgcGFydGl0aW9uczoKZWNobyAiJFBBUlRJVElPTlMiIHwgZ3Jl
+cCBOVEZTIHwgY3V0IC1kJyAnIC1mMSB8IHdoaWxlIHJlYWQgeDsgZG8KICAgIFBBUlROVU09JChl
+Y2hvICR4IHwgZ3JlcCAtRW8gIlswLTldKyQiKQogICAgbnRmc2Nsb25lIC1zbyAtICR4IHwgYm9y
+ZyBjcmVhdGUgLS1zdGF0cyAgICR7YmFrcmVwb306OiR7YmFrcHJlZml4fS1wYXJ0JFBBUlROVU0g
+LQpkb25lCiMgYmFja3VwIG5vbi1OVEZTIHBhcnRpdGlvbnM6CmVjaG8gIiRQQVJUSVRJT05TIiB8
+IGdyZXAgLXYgTlRGUyB8IGN1dCAtZCcgJyAtZjEgfCB3aGlsZSByZWFkIHg7IGRvCiAgICBQQVJU
+TlVNPSQoZWNobyAkeCB8IGdyZXAgLUVvICJbMC05XSskIikKICAgIGJvcmcgY3JlYXRlIC0tcmVh
+ZC1zcGVjaWFsIC0tc3RhdHMgICR7YmFrcmVwb306OiR7YmFrcHJlZml4fS1wYXJ0JFBBUlROVU0g
+JHgKZG9uZQo=
 EOF
 
 read -d ''  backup_blkdev_restore_sh << EOF
-IyEvdXNyL2Jpbi9lbnYgYmFzaAoKIyBTRVRUSU5HUwpiYWtyZXBvPSJiYWNrdXA6cWl3aW5vdGVf
-YmFrIgpESVNLPS9kZXYvc2RhCmJha3ByZWZpeD1mdWxscWl3aW5vdGUKCmV4cG9ydCBMQU5HPWVu
-X1VTLlVURjgKCnJlYWQgLXAgIlJlc3RvcmUgcGFydGl0aW9ucz86ID8gW3kvTl06ICIgeW4KY2Fz
-ZSAkeW4gaW4KICAgIFtZeV0qICkgZWNobzs7CiAgICBbTm5dKiApIGVjaG8gIkV4aXQuIiA7ZXhp
-dDs7CiAgICAqICkgZWNobyAiRXhpdC4iOyBleGl0OzsKZXNhYwoKYm9yZyBleHRyYWN0IC0tc3Rk
-b3V0ICR7YmFrcmVwb306OiR7YmFrcHJlZml4fS1wYXJ0aW5mbyB8IGRkIG9mPSRESVNLICYmIHBh
-cnRwcm9iZQpQQVJUSVRJT05TPSQoc2ZkaXNrIC1sbyBEZXZpY2UsVHlwZSAkRElTSyB8IHNlZCAt
-ZSAnMSwvRGV2aWNlXHMqVHlwZS9kJykKYm9yZyBsaXN0IC0tZm9ybWF0IHthcmNoaXZlfXtOTH0g
-JHtiYWtyZXBvfSB8IGdyZXAgJ3BhcnRbMC05XSokJyB8IHdoaWxlIHJlYWQgeDsgZG8KICAgIFBB
-UlROVU09JChlY2hvICR4IHwgZ3JlcCAtRW8gIlswLTldKyQiKQogICAgUEFSVElUSU9OPSQoZWNo
-byAiJFBBUlRJVElPTlMiIHwgZ3JlcCAtRSAiJERJU0twPyRQQVJUTlVNIiB8IGhlYWQgLW4xKQog
-ICAgaWYgZWNobyAiJFBBUlRJVElPTiIgfCBjdXQgLWQnICcgLWYyLSB8IGdyZXAgLXEgTlRGUzsg
-dGhlbgogICAgICAgIGJvcmcgZXh0cmFjdCAtLXN0ZG91dCAke2Jha3JlcG99OjokeCB8IG50ZnNj
-bG9uZSAtck8gJChlY2hvICIkUEFSVElUSU9OIiB8IGN1dCAtZCcgJyAtZjEpIC0KICAgIGVsc2UK
-ICAgICAgICBib3JnIGV4dHJhY3QgLS1zdGRvdXQgJHtiYWtyZXBvfTo6JHggfCBkZCBvZj0kKGVj
-aG8gIiRQQVJUSVRJT04iIHwgY3V0IC1kJyAnIC1mMSkKICAgIGZpCmRvbmUK
+IyEvdXNyL2Jpbi9lbnYgYmFzaAoKIyBTRVRUSU5HUwpiYWtyZXBvPXJlcG8KRElTSz0vZGV2L3Nk
+YQpiYWtwcmVmaXg9cHJlZml4CgpleHBvcnQgTEFORz1lbl9VUy5VVEY4CgpyZWFkIC1wICJSZXN0
+b3JlIHBhcnRpdGlvbnM/OiA/IFt5L05dOiAiIHluCmNhc2UgJHluIGluCiAgICBbWXldKiApIGVj
+aG87OwogICAgW05uXSogKSBlY2hvICJFeGl0LiIgO2V4aXQ7OwogICAgKiApIGVjaG8gIkV4aXQu
+IjsgZXhpdDs7CmVzYWMKCmJvcmcgZXh0cmFjdCAtLXN0ZG91dCAke2Jha3JlcG99Ojoke2Jha3By
+ZWZpeH0tcGFydGluZm8gfCBkZCBvZj0kRElTSyAmJiBwYXJ0cHJvYmUKUEFSVElUSU9OUz0kKHNm
+ZGlzayAtbG8gRGV2aWNlLFR5cGUgJERJU0sgfCBzZWQgLWUgJzEsL0RldmljZVxzKlR5cGUvZCcp
+CmJvcmcgbGlzdCAtLWZvcm1hdCB7YXJjaGl2ZX17Tkx9ICR7YmFrcmVwb30gfCBncmVwICdwYXJ0
+WzAtOV0qJCcgfCB3aGlsZSByZWFkIHg7IGRvCiAgICBQQVJUTlVNPSQoZWNobyAkeCB8IGdyZXAg
+LUVvICJbMC05XSskIikKICAgIFBBUlRJVElPTj0kKGVjaG8gIiRQQVJUSVRJT05TIiB8IGdyZXAg
+LUUgIiRESVNLcD8kUEFSVE5VTSIgfCBoZWFkIC1uMSkKICAgIGlmIGVjaG8gIiRQQVJUSVRJT04i
+IHwgY3V0IC1kJyAnIC1mMi0gfCBncmVwIC1xIE5URlM7IHRoZW4KICAgICAgICBib3JnIGV4dHJh
+Y3QgLS1zdGRvdXQgJHtiYWtyZXBvfTo6JHggfCBudGZzY2xvbmUgLXJPICQoZWNobyAiJFBBUlRJ
+VElPTiIgfCBjdXQgLWQnICcgLWYxKSAtCiAgICBlbHNlCiAgICAgICAgYm9yZyBleHRyYWN0IC0t
+c3Rkb3V0ICR7YmFrcmVwb306OiR4IHwgZGQgb2Y9JChlY2hvICIkUEFSVElUSU9OIiB8IGN1dCAt
+ZCcgJyAtZjEpCiAgICBmaQpkb25lCg==
 EOF
 
 read -d '' backup_create_lvm_sh << EOF
-IyEvdXNyL2Jpbi9lbnYgYmFzaAoKIyBTRVRUSU5HUwpsdm1zPSJob21lIHJvb3QiCnZnPSJxaXdp
-bm90ZSIKYmFrcmVwbz0iYmFja3VwOnFpd2lub3RlX2JhayIKCiMgT1BUSU9OQUwKc25hcHN1ZmZp
-eD1zbmFwCgoKCiMgQkVHSU4KYmVnaW5kaXI9IiQocHdkKSIKYmFrcm9vdD0vdG1wL2JvcmdiYWty
-b290Cm1rZGlyIC1wICRiYWtyb290IHx8IGV4aXQ7CgpzeW5jCgojIGNyZWF0ZSBzbmFwc2hvdHMK
-Zm9yIGx2IGluICRsdm1zOwpkbwogICAgYmFrc25hcD0iJHtsdn0ke3NuYXBzdWZmaXh9IgogICAg
-bHZjcmVhdGUgLXMgLUwxRyAtbiAke2Jha3NuYXB9IC9kZXYvJHt2Z30vJHtsdn0gfHwgZXhpdDsK
-ZG9uZTsKCiMgbW91bnQgc25hcHNob3RzCmZvciBsdiBpbiAkbHZtczsKZG8KICAgIGJha3NuYXA9
-IiR7bHZ9JHtzbmFwc3VmZml4fSIKICAgIGJrcGluPSIke2Jha3Jvb3R9LyR7bHZ9IgogICAgbWtk
-aXIgLXAgICRia3BpbgogICAgbW91bnQgLW8gInJvIiAvZGV2LyR7dmd9LyR7YmFrc25hcH0gJHti
-a3Bpbn0gfHwgZXhpdDsKICAgIGVjaG8gL2Rldi8ke3ZnfS8ke2Jha3NuYXB9IG1vdW50ZWQgdG8g
-JHtia3Bpbn0KZG9uZTsKCgoKIyBiYWNrdXAKY2QgIiRiYWtyb290Igpib3JnIGNyZWF0ZSAtLXN0
-YXRzICAke2Jha3JlcG99OjoiJHt2Z30te25vdzolWS0lbS0lZF8lSC0lTS0lU30iIC4KY2QgIiRi
-ZWdpbmRpciIKc3luYwpzbGVlcCA1CgojIHVubW91bnQgYW5kIHJlbW92ZSBzbmFwc2hvdHMKZm9y
-IGx2IGluICRsdm1zOwpkbwogICAgYmFrc25hcD0iJHtsdn0ke3NuYXBzdWZmaXh9IgogICAgYmtw
-aW49IiR7YmFrcm9vdH0vJHtsdn0iCiAgICB1bW91bnQgJHtia3Bpbn0gfHwgZXhpdDsKICAgIGx2
-cmVtb3ZlIC15IC9kZXYvJHt2Z30vJHtiYWtzbmFwfSB8fCBleGl0Owpkb25lOwoKZWNobyByZW1v
-dmluZyBvbGQgYmFja3Vwcy4uLgpib3JnIHBydW5lICAtLXN0YXRzIC0ta2VlcC13aXRoaW4gMmQg
-LS1rZWVwLWRhaWx5IDcgLS1rZWVwLXdlZWtseSA4IC0ta2VlcC1tb250aGx5IDEyICR7YmFrcmVw
-b30K
+IyEvdXNyL2Jpbi9lbnYgYmFzaAoKIyBTRVRUSU5HUwpsdm1zPSJsdm5hbWUxIGx2bmFtZTIiCnZn
+PSJ2Z25hbWUiCmJha3JlcG89IiIKCiMgT1BUSU9OQUwKc25hcHN1ZmZpeD1zbmFwCgoKCiMgQkVH
+SU4KYmVnaW5kaXI9IiQocHdkKSIKYmFrcm9vdD0vdG1wL2JvcmdiYWtyb290CgppZiBbWyAiJHti
+YWtyZXBvfSIgPX4gLio6LiogXV07IHRoZW4KICAgIGhvc3Q9JChlY2hvICRiYWtyZXBvIHwgY3V0
+IC1kICc6JyAtZiAxKQogICAgc3NoICR7aG9zdH0gaG9zdG5hbWUgPiAvZGV2L251bGwgMj4mMSAm
+JiAgZWNobyBTU0ggY2hlY2s6IE9LIHx8IHsgZWNobyBTU0ggY2hlY2s6IEZhaWxlZCEgOyBleGl0
+IDE7IH0KZmkKCm1rZGlyIC1wICRiYWtyb290IHx8IGV4aXQgMTsKCnN5bmMKCiMgY3JlYXRlIHNu
+YXBzaG90cwpmb3IgbHYgaW4gJGx2bXM7CmRvCiAgICBiYWtzbmFwPSIke2x2fSR7c25hcHN1ZmZp
+eH0iCiAgICBsdmNyZWF0ZSAtcyAtTDUwME0gLW4gJHtiYWtzbmFwfSAvZGV2LyR7dmd9LyR7bHZ9
+IHx8IGV4aXQgMTsKZG9uZTsKCiMgbW91bnQgc25hcHNob3RzCmZvciBsdiBpbiAkbHZtczsKZG8K
+ICAgIGJha3NuYXA9IiR7bHZ9JHtzbmFwc3VmZml4fSIKICAgIGJrcGluPSIke2Jha3Jvb3R9LyR7
+bHZ9IgogICAgbWtkaXIgLXAgICRia3BpbgogICAgbW91bnQgLW8gInJvIiAvZGV2LyR7dmd9LyR7
+YmFrc25hcH0gJHtia3Bpbn0gfHwgZXhpdCAxOwogICAgZWNobyAvZGV2LyR7dmd9LyR7YmFrc25h
+cH0gbW91bnRlZCB0byAke2JrcGlufQpkb25lOwoKCgojIGJhY2t1cApjZCAiJGJha3Jvb3QiCmJv
+cmcgY3JlYXRlIC0tc3RhdHMgLS1udW1lcmljLW93bmVyICAke2Jha3JlcG99OjoiJHt2Z30te25v
+dzolWS0lbS0lZF8lSC0lTS0lU30iIC4KY2QgIiRiZWdpbmRpciIKc3luYwpzbGVlcCA1CgoKIyB1
+bm1vdW50IGFuZCByZW1vdmUgc25hcHNob3RzCmVjaG8KZWNobyBVbm1vdW50IGFuZCByZW1vdmUg
+c25hcHNob3RzLi4uCmZvciBsdiBpbiAkbHZtczsKZG8KICAgIGJha3NuYXA9IiR7bHZ9JHtzbmFw
+c3VmZml4fSIKICAgIGJrcGluPSIke2Jha3Jvb3R9LyR7bHZ9IgogICAgdW1vdW50ICR7YmtwaW59
+IHx8IGV4aXQgMTsKICAgIGx2cmVtb3ZlIC15IC9kZXYvJHt2Z30vJHtiYWtzbmFwfSB8fCBleGl0
+IDE7CmRvbmU7CgoKZWNobwplY2hvIHJlbW92aW5nIG9sZCBiYWNrdXBzLi4uCmJvcmcgcHJ1bmUg
+IC0tc3RhdHMgIC0tcHJlZml4ICIke3ZnfS0iIC0ta2VlcC13aXRoaW4gMmQgLS1rZWVwLWRhaWx5
+IDcgLS1rZWVwLXdlZWtseSA4IC0ta2VlcC1tb250aGx5IDEyICR7YmFrcmVwb30gJiYgZWNobyBS
+ZW1vdmUgb2xkIGJhY2t1cHM6IE9LIHx8IHsgZWNobyBSZW1vdmUgb2xkIGJhY2t1cHM6IEZhaWxl
+ZDsgZXhpdCAxOyB9Cgo=
 EOF
 
 read -d '' backup_create_sh << EOF
-IyEvdXNyL2Jpbi9lbnYgYmFzaAoKI3NldHRpbmdzCmJha3JlcG89YmFja3VwOnFpd2ljaHVwYS5u
-ZXQKYmFrbmFtZT1xaXdpY2h1cGEubmV0CgoKYm9yZyBjcmVhdGUgLS1zdGF0cyAgJHtiYWtyZXBv
-fTo6IiR7YmFrbmFtZX0te25vdzolWS0lbS0lZF8lSC0lTS0lU30iIC8gXAogICAgLS1leGNsdWRl
-ICcvdmFyL0JUU3luY19Sb290LyonIFwKICAgIC0tZXhjbHVkZSAnL2Rldi8qJyBcCiAgICAtLWV4
-Y2x1ZGUgJy9wcm9jLyonIFwKICAgIC0tZXhjbHVkZSAnL3J1bi8qJyBcCiAgICAtLWV4Y2x1ZGUg
-Jy9zeXMvKicKCmJvcmcgcHJ1bmUgIC0tc3RhdHMgLS1rZWVwLXdpdGhpbiAyZCAtLWtlZXAtZGFp
-bHkgNyAtLWtlZXAtd2Vla2x5IDggLS1rZWVwLW1vbnRobHkgMTIgJHtiYWtyZXBvfQo=
+IyEvdXNyL2Jpbi9lbnYgYmFzaAoKI3NldHRpbmdzCmJha3JlcG89cmVwbwpiYWtwcmVmaXg9cHJl
+Zml4CgoKYm9yZyBjcmVhdGUgLS1zdGF0cyAtLW51bWVyaWMtb3duZXIgICAke2Jha3JlcG99Ojoi
+JHtiYWtwcmVmaXh9LXtub3c6JVktJW0tJWRfJUgtJU0tJVN9IiAvIFwKICAgIC0tZXhjbHVkZSAn
+L2Rldi8qJyBcCiAgICAtLWV4Y2x1ZGUgJy9wcm9jLyonIFwKICAgIC0tZXhjbHVkZSAnL3J1bi8q
+JyBcCiAgICAtLWV4Y2x1ZGUgJy9zeXMvKicKCmJvcmcgcHJ1bmUgIC0tc3RhdHMgLS1wcmVmaXgg
+IiR7YmFrcHJlZml4fS0iIC0ta2VlcC13aXRoaW4gMmQgLS1rZWVwLWRhaWx5IDcgLS1rZWVwLXdl
+ZWtseSA4IC0ta2VlcC1tb250aGx5IDEyICR7YmFrcmVwb30K
 EOF
 
 read -d '' backup_mount_sh << EOF
-IyEvdXNyL2Jpbi9lbnYgYmFzaAoKI3NldHRpbmdzCmJha3JlcG89YmFja3VwOnFpd2lub3RlX2Jh
-awptbnRkaXI9L21udC9iYWNrdXAKCm1rZGlyIC1wICIke21udGRpcn0iICB8fCBleGl0OwpjaG1v
-ZCA3NzcgIiR7bW50ZGlyfSIgfHwgZXhpdDsKYm9yZyBtb3VudCAtbyBhbGxvd19vdGhlciAgIiR7
-YmFrcmVwb30iICIke21udGRpcn0iIHx8IGV4aXQ7CmVjaG8gYmFja3VwIG1vdW50cG9pbnQ6ICR7
-bW50ZGlyfSAgfHwgZXhpdDsKbWMgIiR7bW50ZGlyfSIKYm9yZyB1bW91bnQgIiR7bW50ZGlyfSIg
-JiYgZWNobyB1bW91bnQgY29tcGxldGUKCg==
+IyEvdXNyL2Jpbi9lbnYgYmFzaAoKI3NldHRpbmdzCmJha3JlcG89cmVwbwptbnRkaXI9L3RtcC9i
+b3JnYmFja3VwCgpta2RpciAtcCAiJHttbnRkaXJ9IiAgfHwgZXhpdDsKY2htb2QgNzc3ICIke21u
+dGRpcn0iIHx8IGV4aXQ7CmJvcmcgbW91bnQgLW8gYWxsb3dfb3RoZXIgICIke2Jha3JlcG99IiAi
+JHttbnRkaXJ9IiB8fCBleGl0OwplY2hvIGJhY2t1cCBtb3VudHBvaW50OiAke21udGRpcn0gIHx8
+IGV4aXQ7Cm1jICIke21udGRpcn0iCmJvcmcgdW1vdW50ICIke21udGRpcn0iICYmIGVjaG8gdW1v
+dW50IGNvbXBsZXRlCgo=
 EOF
 
 
@@ -114,10 +123,9 @@ case $key in
     SHOWHELP=true
     shift # past argument
     ;;
-    -r|--role)
-    ROLE="$2"
+    --no-download)
+    NODOWNLOAD=true
     shift # past argument
-    shift # past value
     ;;
     -c|--client)
     ROLE=client
@@ -164,6 +172,11 @@ Usage:
     $(basename $0) -s,--server -- deploy server
     $(basename $0) -c,--client -- deploy client
 
+Options:
+    --no-download -- skip borg downloading (also check 
+                     "alt_download_link=" in head of this script)
+
+
 Before deploying server or client with connection to remote storage,
 you must charge this script with your ssh-keys:
 
@@ -174,6 +187,12 @@ or generate new keys:
     $(basename $0) -g
 
 in both ways keys will be encoded as base64 and saved right into this script.
+
+If you have no connetion to internet, you have 2 choices:
+1. Use "alt_download_link" variable in the beginning of this script
+   to set alternative for download link (intranet server or something)
+2. Install borg binary manually and after this use key --no-download 
+   with -s or -c to prevent download attempts.
 EOF
 
 echo "$help"
@@ -201,27 +220,39 @@ if [[ $ROLE = "client" ]];then
 
 		sshconfig="$HOME/.ssh/config"
 		host=$(echo $bakrepo | cut -d ':' -f1)
-		echo "Host ${host}" >> "${sshconfig}"
-		read -p "Enter address for $(echo $bakrepo | cut -d ':' -f1) [${default_hostname}]: " hostname
+		read -p "enter address for $(echo $bakrepo | cut -d ':' -f1) [${default_hostname}]: " hostname
 		if [ -z ${hostname} ]; then hostname=${default_hostname}; fi
-		echo "    HostName=${hostname}" >> "${sshconfig}"
-		echo "    User ${sshuser}" >> "${sshconfig}"
-		echo "    IdentityFile ~/.ssh/borg_id_rsa" >> "${sshconfig}"
-		echo "checking ssh connection to ${host} (${hostname})"
-		ssh ${host} hostname > /dev/null 2>&1 || echo connection failed ; exit;
+		read -p "enter ssh port for $(echo ${hostname}) [22]: " port
+		if [ -z ${port} ]; then port=22; fi
+		cfghead="# borg cfg begin"
+		cfgtail="# borg cfg end"
+		cfgbody="Host ${host}\n  HostName ${hostname}\n  User ${sshuser}\n  Port ${port}\n  IdentityFile ~/.ssh/borg_id_rsa"
+		if grep -q "${cfghead}" ${sshconfig} && grep -q "${cfgtail}" ${sshconfig}; then
+			sed  -e "/^${cfghead}/,/${cfgtail}/c\\${cfghead}\n${cfgbody}\n${cfgtail}" -i ${sshconfig}
+		else
+			echo -en "${cfghead}\n${cfgbody}\n${cfgtail}" >> ${sshconfig}
+		fi
+		echo
+		echo "Checking ssh connection to ${host} (${hostname})"
+		ssh ${host} hostname > /dev/null 2>&1 && echo -en  "  connection: OK\n" || { echo -en "  connection: failed\n" ; exit 1; }
 	fi
 
-	rm /usr/local/bin/borg
-	echo downloading borg to /usr/local/bin/borg
-	if [ -z ${alt_download_link} ]; then
-		wget --no-verbose -c  https://github.com/borgbackup/borg/releases/download/${borgversion}/borg-linux64 -O /usr/local/bin/borg
+	if [[  ${NODOWNLOAD} = true ]]; then
+		echo Skipping downloading borg
 	else
-		wget --no-verbose -c  ${alt_download_link}  -O /usr/local/bin/borg
-	fi;
-	chmod +x /usr/local/bin/borg || exit;
+		rm /usr/local/bin/borg
+		echo downloading borg to /usr/local/bin/borg
+		if [ -z ${alt_download_link} ]; then
+			wget --no-verbose -c  https://github.com/borgbackup/borg/releases/download/${borgversion}/borg-linux64 -O /usr/local/bin/borg
+		else
+			wget --no-verbose -c  ${alt_download_link}  -O /usr/local/bin/borg
+		fi
+		chmod +x /usr/local/bin/borg || exit;
+	fi
 
 	# CREATING SCRIPTS
 	mkdir -p  "${HOME}/${shdir}/"
+	echo
 	echo creating files in "${HOME}/${shdir}/"
 	base64 -d <<< ${backup_create_sh} > "${HOME}/${shdir}/backup_create.sh"
 	base64 -d <<< ${backup_create_lvm_sh} > "${HOME}/${shdir}/backup_create_lvm.sh"
@@ -231,33 +262,39 @@ if [[ $ROLE = "client" ]];then
 	chmod +x "${HOME}/${shdir}"/*.sh
 
 	# CHANGING DEFAULT SETTINGS IN SCRIPTS
-	echo adding bakrepo=${bakrepo} to:
-	echo " ${HOME}/${shdir}/backup_create.sh"
-	 sed  -e "s/^\(bakrepo=\).*$/\1${bakrepo}/g" -i "${HOME}/${shdir}/backup_create.sh"
-	echo " ${HOME}/${shdir}/backup_create_lvm.sh"
-	 sed  -e "s/^\(bakrepo=\).*$/\1${bakrepo}/g" -i "${HOME}/${shdir}/backup_create_lvm.sh"
-	echo " ${HOME}/${shdir}/backup_mount.sh"
-	 sed  -e "s/^\(bakrepo=\).*$/\1${bakrepo}/g" -i "${HOME}/${shdir}/backup_mount.sh"
-	echo " ${HOME}/${shdir}/backup_blkdev_create.sh"
-	 sed  -e "s/^\(bakrepo=\).*$/\1${bakrepo}/g" -i "${HOME}/${shdir}/backup_blkdev_create.sh"
-	echo " ${HOME}/${shdir}/backup_blkdev_restore.sh"
-	 sed  -e "s/^\(bakrepo=\).*$/\1${bakrepo}/g" -i "${HOME}/${shdir}/backup_blkdev_restore.sh"
+	echo
+	echo set  bakrepo=${bakrepo} in:
+	sed  -e "s/^\(bakrepo=\).*$/\1${bakrepo}/g" -i "${HOME}/${shdir}/backup_create.sh" &&\
+		echo " ${HOME}/${shdir}/backup_create.sh: OK"
+	sed  -e "s/^\(bakrepo=\).*$/\1${bakrepo}/g" -i "${HOME}/${shdir}/backup_create_lvm.sh" &&\
+		echo " ${HOME}/${shdir}/backup_create_lvm.sh: OK"
+	sed  -e "s/^\(bakrepo=\).*$/\1${bakrepo}/g" -i "${HOME}/${shdir}/backup_mount.sh" &&\
+		 echo " ${HOME}/${shdir}/backup_mount.sh: OK"
+	sed  -e "s/^\(bakrepo=\).*$/\1${bakrepo}/g" -i "${HOME}/${shdir}/backup_blkdev_create.sh" &&\
+		echo " ${HOME}/${shdir}/backup_blkdev_create.sh: OK"
+	sed  -e "s/^\(bakrepo=\).*$/\1${bakrepo}/g" -i "${HOME}/${shdir}/backup_blkdev_restore.sh" &&\
+		 echo " ${HOME}/${shdir}/backup_blkdev_restore.sh: OK"
 
-	echo adding bakprefix=full${HOSTNAME} to:
-	echo " ${HOME}/${shdir}/backup_blkdev_create.sh"
-	 sed  -e "s/^\(bakprefix=\).*$/\1full${HOSTNAME}/g" -i "${HOME}/${shdir}/backup_blkdev_create.sh"
-	echo " ${HOME}/${shdir}/backup_blkdev_restore.sh"
-	 sed  -e "s/^\(bakprefix=\).*$/\1full${HOSTNAME}/g" -i "${HOME}/${shdir}/backup_blkdev_restore.sh"
+	echo set bakprefix=full${HOSTNAME} in:
+	sed  -e "s/^\(bakprefix=\).*$/\1full${HOSTNAME}/g" -i "${HOME}/${shdir}/backup_blkdev_create.sh" &&\
+		echo " ${HOME}/${shdir}/backup_blkdev_create.sh: OK"
+	sed  -e "s/^\(bakprefix=\).*$/\1full${HOSTNAME}/g" -i "${HOME}/${shdir}/backup_blkdev_restore.sh" &&\
+		echo " ${HOME}/${shdir}/backup_blkdev_restore.sh: OK"
+	sed  -e "s/^\(bakprefix=\).*$/\1${HOSTNAME}/g" -i "${HOME}/${shdir}/backup_create.sh" &&\
+		echo " ${HOME}/${shdir}/backup_create.sh: OK"
 
-	echo adding mntdir=${mountpoint} to:
-	echo " ${HOME}/${shdir}/backup_mount.sh"
-	 sed  -e "s|^\(mntdir=\).*$|\1${mountpoint}|g" -i "${HOME}/${shdir}/backup_mount.sh"
 
-	echo check and edit settings in "${HOME}/${shdir}/*.sh"
+	echo set mntdir=${mountpoint} in:
+	sed  -e "s|^\(mntdir=\).*$|\1${mountpoint}|g" -i "${HOME}/${shdir}/backup_mount.sh" &&\
+		echo " ${HOME}/${shdir}/backup_mount.sh: OK"
+	echo
 
 	echo checking repository
-	borg list ${bakrepo} || read -p "try to init new repo? ${bakrepo} [y/N]" initnewrepo
+	borg list ${bakrepo} > /dev/null 2>&1 && echo repository found || read -p "try to init new repo? ${bakrepo} [y/N]" initnewrepo
 	if [[ $initnewrepo = "y" ]]; then borg init -e none ${bakrepo}; fi
+
+	echo 
+	echo Setup complete. Please check and edit settings in:  "${HOME}/${shdir}/*.sh"
 fi
 
 
@@ -272,14 +309,18 @@ if [[ $ROLE = "server" ]]; then
 		exit;
 	fi
 
-	rm /usr/local/bin/borg
-	echo downloading borg to /usr/local/bin/borg
-	if [ -z ${alt_download_link} ]; then
-		wget --no-verbose -c  https://github.com/borgbackup/borg/releases/download/${borgversion}/borg-linux64 -O /usr/local/bin/borg
+	if [[ -z NODOWNLOAD ]]; then
+		echo Skip download and install borg
 	else
-		wget --no-verbose -c  ${alt_download_link}  -O /usr/local/bin/borg
-	fi;
-	chmod +x /usr/local/bin/borg || exit;
+		rm /usr/local/bin/borg
+		echo downloading borg to /usr/local/bin/borg
+		if [ -z ${alt_download_link} ]; then
+			wget --no-verbose -c  https://github.com/borgbackup/borg/releases/download/${borgversion}/borg-linux64 -O /usr/local/bin/borg
+		else
+			wget --no-verbose -c  ${alt_download_link}  -O /usr/local/bin/borg
+		fi
+		chmod +x /usr/local/bin/borg || exit;
+	fi
 
 	useradd -m ${sshuser} || exit;
 	mkdir ~${sshuser}/.ssh
