@@ -1,6 +1,7 @@
 #!/bin/bash
 # Syslog server with web interface for Debian 10
 # LAMP + phpmyadmin + rsyslog + Log Analyzer
+# Article with explanations (russian): https://qiwichupa.net/?p=6437 (also in web.archive.org)
 
 PHPMYADMINUSER="pma"
 PHPMYADMINPASS="321"
