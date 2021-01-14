@@ -55,7 +55,7 @@ function install_sql {
 
 ######### PHP
 function check_php {
-    phpnotinstalled=$( check_packages php libapache2-mod-php php-mysql php-common php-cli  php-json php-opcache php-readline php-mbstring )
+    phpnotinstalled=$( check_packages php libapache2-mod-php php-mysql php-common php-cli  php-json php-gd php-opcache php-readline php-mbstring )
     if [[ "true" != ${phpnotinstalled} ]]; then
         echo "${phpnotinstalled}"
     else
