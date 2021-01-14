@@ -369,5 +369,5 @@ echo "     Database Name (case-sensitive): Syslog"
 echo "Database Tablename (case-sensitive): SystemEvents"
 echo "                      Database User: rsyslog"
 echo "                  Database Password: ${SYSLOGDBPASSWORD}"
-echo "                Enable Row Counting: Yes"
+echo "                Enable Row Counting: No"
 
