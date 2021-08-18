@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-import ffmpeg
+import ffmpeg #pip install ffmpeg-python
 import glob
 import os
 
@@ -13,6 +13,7 @@ actions.add_argument('--resize', action='store_true', help='resize single video'
 actions.add_argument('--cut', action='store_true', help='cut single video. Use -a and(or) -b ')
 actions.add_argument('--togif', action='store_true', help='convert single video to gif')
 actions.add_argument('--to264', action='store_true', help='convert all files with specified extension to mp4/h264. H264-video will be skipped')
+actions.add_argument('--tomp3', action='store_true', help='extract audio to mp3')
 
 resizeMethod1 = parser.add_argument_group('resize method #1 (used with: --resize, --togif)')
 resizeMethod1.add_argument('--scale', type=float,  default=1, metavar='S', help='scale multiplier: 0.5, 2, 3.4, etc')
@@ -124,7 +125,7 @@ def convert_to_gif():
 def convert_to_x264():
     ext = args.inpt
     for f in  os.listdir('.'):
-        if f.lower().endswith(ext):
+        if f.lower().endswith(ext.lower()):
             outfile = os.path.splitext(f)[0] + '_converted.mp4'
             for i in range(len(ffmpeg.probe(f)['streams'])):
                 if ffmpeg.probe(f)['streams'][i]['codec_type'] == 'video':
@@ -133,9 +134,28 @@ def convert_to_x264():
             if videoinfo['codec_name'] != 'h264' or args.force:
                 input = ffmpeg.input(f)
                 video = input.video
-                audio = input.audio
-                out = ffmpeg.output(audio, video, outfile, qscale=0)
+                audio = None
+                # searching audio
+                for i in range(len(ffmpeg.probe(f)['streams'])):
+                    if ffmpeg.probe(f)['streams'][i]['codec_type'] == 'audio':
+                        audio = input.audio
+                        break;
+                if audio is not None:
+                    out = ffmpeg.output(audio, video, outfile, qscale=0)
+                else:
+                    out = ffmpeg.output(video, outfile, qscale=0)
                 out.run()
+
+def convert_to_mp3():
+    infile = args.inpt
+    outfile = os.path.splitext(infile)[0] + '.mp3'
+
+    input = ffmpeg.input(infile)
+    audio = input.audio
+
+    out = ffmpeg.output(audio, outfile)
+    out.run()
+
 
 if args.resize:
     resize_single_video()
@@ -145,3 +165,5 @@ elif args.to264:
     convert_to_x264()
 elif args.cut:
     cut_single_video()
+elif args.tomp3:
+    convert_to_mp3()
