@@ -22,13 +22,13 @@ sshuser=borg
 # You must charge this script with ssh keys before deploy
 # or connect to remote repository.
 # Run script with -h to see details.
-read -d '' borg_id_rsa << EOF
+read -d '' borg_id_rsa << 'EOF'
 EOF
 
-read -d '' borg_id_rsa_pub << EOF
+read -d '' borg_id_rsa_pub << 'EOF'
 EOF
 
-read -d ''  backup_blkdev_create_sh << EOF
+read -d ''  backup_blkdev_create_sh << 'EOF'
 IyEvdXNyL2Jpbi9lbnYgYmFzaAoKIyBTRVRUSU5HUwpiYWtyZXBvPWJhY2t1cDpyZXBvCkRJU0s9
 L2Rldi9zZGEKYmFrcHJlZml4PXByZWZpeAprZWVwbGFzdG9ubHk9eWVzCgoKCmV4cG9ydCBMQU5H
 PWVuX1VTLlVURjgKCiMgY2hlY2sgc3NoCmRhdGUKaWYgW1sgIiR7YmFrcmVwb30iID1+IC4qOi4q
@@ -63,7 +63,7 @@ aG8gUmVtb3ZlIG9sZCBiYWNrdXBzOiBPSyB8fCB7IGVjaG8gUmVtb3ZlIG9sZCBiYWNrdXBzOiBG
 YWlsZWQ7IGV4aXQgMTsgfQpmaQoK
 EOF
 
-read -d ''  backup_blkdev_restore_sh << EOF
+read -d ''  backup_blkdev_restore_sh << 'EOF'
 IyEvdXNyL2Jpbi9lbnYgYmFzaAoKIyBTRVRUSU5HUwpiYWtyZXBvPXJlcG8KRElTSz0vZGV2L3Nk
 YQpiYWtwcmVmaXg9cHJlZml4CgoKIyBjaGVjayBzc2gKZGF0ZQppZiBbWyAiJHtiYWtyZXBvfSIg
 PX4gLio6LiogXV07IHRoZW4KICAgIGhvc3Q9JChlY2hvICRiYWtyZXBvIHwgY3V0IC1kICc6JyAt
@@ -88,7 +88,7 @@ ZG91dCAke2Jha3JlcG99OjokeCB8IGRkIG9mPSQoZWNobyAiJFBBUlRJVElPTiIgfCBjdXQgLWQn
 ICcgLWYxKQogICAgZmkKZG9uZQo=
 EOF
 
-read -d '' backup_create_lvm_sh << EOF
+read -d '' backup_create_lvm_sh << 'EOF'
 IyEvdXNyL2Jpbi9lbnYgYmFzaAoKIyBTRVRUSU5HUwpsdm1zPSJsdm5hbWUxIGx2bmFtZTIiCnZn
 PSJ2Z25hbWUiCmJha3JlcG89IiIKCiMgb3B0aW9uYWwKc25hcHN1ZmZpeD1zbmFwCmJha3Jvb3Q9
 L3RtcC9ib3JnYmFrcm9vdAoKCgojIEZVTkMKZnVuY3Rpb24gdW1vdW50X2FuZF9yZW1vdmVzbmFw
@@ -129,7 +129,7 @@ YWNrdXBzOiBPSyB8fCB7IGVjaG8gUmVtb3ZlIG9sZCBiYWNrdXBzOiBGYWlsZWQ7IGV4aXQgMTsg
 fQo=
 EOF
 
-read -d '' backup_create_sh << EOF
+read -d '' backup_create_sh << 'EOF'
 IyEvdXNyL2Jpbi9lbnYgYmFzaAoKI3NldHRpbmdzCmJha3JlcG89IiIKYmFrcHJlZml4PXByZWZp
 eAoKIyBjaGVjayBzc2gKZGF0ZQppZiBbWyAiJHtiYWtyZXBvfSIgPX4gLio6LiogXV07IHRoZW4K
 ICAgIGhvc3Q9JChlY2hvICRiYWtyZXBvIHwgY3V0IC1kICc6JyAtZiAxKQogICAgc3NoICR7aG9z
@@ -145,7 +145,7 @@ cmVmaXh9LSIgLS1rZWVwLXdpdGhpbiAyZCAtLWtlZXAtZGFpbHkgNyAtLWtlZXAtd2Vla2x5IDgg
 LS1rZWVwLW1vbnRobHkgMTIgJHtiYWtyZXBvfQo=
 EOF
 
-read -d '' backup_mount_sh << EOF
+read -d '' backup_mount_sh << 'EOF'
 IyEvdXNyL2Jpbi9lbnYgYmFzaAoKI3NldHRpbmdzCmJha3JlcG89cmVwbwptbnRkaXI9L3RtcC9i
 b3JnYmFja3VwCgpta2RpciAtcCAiJHttbnRkaXJ9IiAgfHwgZXhpdDsKY2htb2QgNzc3ICIke21u
 dGRpcn0iIHx8IGV4aXQ7CmJvcmcgbW91bnQgLW8gYWxsb3dfb3RoZXIgICIke2Jha3JlcG99IiAi
@@ -194,7 +194,16 @@ case $key in
     PRIVATEKEY="$2"
     shift # past argument
     shift # past value
-    ;;  --default)
+    ;;  
+    --export-plain)
+    TOPLAIN=true
+    shift # past argument
+    ;;
+    --export-base64)
+    TOBASE64=true
+    shift # past argument
+    ;;
+    --default)
     DEFAULT=YES
     shift # past argument
     ;;
@@ -215,8 +224,11 @@ Usage:
     $(basename $0) -c,--client -- deploy client
 
 Options:
-    --no-download -- skip borg downloading (also check 
-                     "alt_download_link=" in head of this script)
+    --no-download    -- skip borg downloading (also check 
+                        "alt_download_link=" in head of this script)
+    --export-plain   -- save "editable" version of this script - all base64 variables will be replaced by plain text (only for editing purpose!)
+    --export-base64  -- run "editable" version of script with this key to save as working script
+    
 
 
 Before deploying server or client with connection to remote storage,
@@ -375,14 +387,14 @@ fi
 if [[  $PUBKEY  ]]; then
 	if test -f "$PUBKEY"; then
 		key=$(base64 $PUBKEY | sed -z 's/\n/\\n/g' | sed -e 's/\\n$//g')
-		sed  -e "/^read -d '' borg_id_rsa_pub << EOF$/,/^EOF$/c\read -d '' borg_id_rsa_pub << EOF\n${key}\nEOF" -i $(basename "$0")
+		sed  -e "/^read -d '' borg_id_rsa_pub << 'EOF'$/,/^EOF$/c\read -d '' borg_id_rsa_pub << 'EOF'\n${key}\nEOF" -i $(basename "$0")
 	fi
 fi
 
 if [[  $PRIVATEKEY ]]; then
 	if test -f "$PRIVATEKEY"; then
 		key=$(base64 $PRIVATEKEY | sed -z 's/\n/\\n/g' | sed -e 's/\\n$//g')
-		sed  -e "/^read -d '' borg_id_rsa << EOF$/,/^EOF$/c\read -d '' borg_id_rsa << EOF\n${key}\nEOF" -i $(basename "$0")
+		sed  -e "/^read -d '' borg_id_rsa << 'EOF'$/,/^EOF$/c\read -d '' borg_id_rsa << 'EOF'\n${key}\nEOF" -i $(basename "$0")
 	fi
 fi
 
@@ -393,13 +405,58 @@ if [[  $GENKEYS ]]; then
 	ssh-keygen -q -P '' -t rsa -f ${PRIVATEKEY}
 
 	key=$(base64 $PUBKEY | sed -z 's/\n/\\n/g' | sed -e 's/\\n$//g')
-	sed  -e "/^read -d '' borg_id_rsa_pub << EOF$/,/^EOF$/c\read -d '' borg_id_rsa_pub << EOF\n${key}\nEOF" -i $(basename "$0")
+	sed  -e "/^read -d '' borg_id_rsa_pub << 'EOF'$/,/^EOF$/c\read -d '' borg_id_rsa_pub << 'EOF'\n${key}\nEOF" -i $(basename "$0")
 	key=$(base64 $PRIVATEKEY | sed -z 's/\n/\\n/g' | sed -e 's/\\n$//g')
-	sed  -e "/^read -d '' borg_id_rsa << EOF$/,/^EOF$/c\read -d '' borg_id_rsa << EOF\n${key}\nEOF" -i $(basename "$0")
+	sed  -e "/^read -d '' borg_id_rsa << 'EOF'$/,/^EOF$/c\read -d '' borg_id_rsa << 'EOF'\n${key}\nEOF" -i $(basename "$0")
 fi
 
 if [[  $CLEANKEYS ]]; then
 
-	sed  -e "/^read -d '' borg_id_rsa_pub << EOF$/,/^EOF$/c\read -d '' borg_id_rsa_pub << EOF\nEOF" -i $(basename "$0")
-	sed  -e "/^read -d '' borg_id_rsa << EOF$/,/^EOF$/c\read -d '' borg_id_rsa << EOF\nEOF" -i $(basename "$0")
+	sed  -e "/^read -d '' borg_id_rsa_pub << 'EOF'$/,/^EOF$/c\read -d '' borg_id_rsa_pub << 'EOF'\nEOF" -i $(basename "$0")
+	sed  -e "/^read -d '' borg_id_rsa << 'EOF'$/,/^EOF$/c\read -d '' borg_id_rsa << 'EOF'\nEOF" -i $(basename "$0")
+fi
+
+if [[  $TOPLAIN ]]; then
+    plainfile=$(basename -s .sh "$0").plain.sh
+	cat $(basename "$0") > "$plainfile"
+	chmod +x "$plainfile"
+	# first sed is for trimming, second for correct replacing in next block
+	borg_id_rsa_pub_plain=$(base64 -d <<< ${borg_id_rsa_pub} |  sed  -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}' | sed 's/\\/&&/g;s/^[[:blank:]]/\\&/;s/$/\\/')
+	borg_id_rsa_plain=$(base64 -d <<< ${borg_id_rsa} |  sed  -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}' | sed 's/\\/&&/g;s/^[[:blank:]]/\\&/;s/$/\\/')
+	backup_create_sh_plain=$(base64 -d <<< ${backup_create_sh} | sed  -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}' | sed 's/\\/&&/g;s/^[[:blank:]]/\\&/;s/$/\\/')
+	backup_create_lvm_sh_plain=$(base64 -d <<< ${backup_create_lvm_sh} | sed  -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}' | sed 's/\\/&&/g;s/^[[:blank:]]/\\&/;s/$/\\/')
+	backup_mount_sh_plain=$(base64 -d <<< ${backup_mount_sh} |  sed  -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}' | sed 's/\\/&&/g;s/^[[:blank:]]/\\&/;s/$/\\/')
+	backup_blkdev_create_sh_plain=$(base64 -d <<< ${backup_blkdev_create_sh} |  sed  -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}' | sed 's/\\/&&/g;s/^[[:blank:]]/\\&/;s/$/\\/')
+	backup_blkdev_restore_sh_plain=$(base64 -d <<< ${backup_blkdev_restore_sh} |  sed  -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}' | sed 's/\\/&&/g;s/^[[:blank:]]/\\&/;s/$/\\/')
+	
+	sed  -E "/^read -d '' borg_id_rsa_pub << 'EOF'$/,/^EOF$/c\read -d '' borg_id_rsa_pub << 'EOF'\n${borg_id_rsa_pub_plain} \nEOF" -i "$plainfile"
+	sed  -E "/^read -d '' borg_id_rsa << 'EOF'$/,/^EOF$/c\read -d '' borg_id_rsa << 'EOF'\n${borg_id_rsa_plain} \nEOF" -i "$plainfile"
+	sed  -E "/^read -d ''  backup_blkdev_create_sh << 'EOF'$/,/^EOF$/c\read -d ''  backup_blkdev_create_sh << 'EOF'\n${backup_blkdev_create_sh_plain} \nEOF" -i "$plainfile"
+	sed  -E "/^read -d ''  backup_blkdev_restore_sh << 'EOF'$/,/^EOF$/c\read -d ''  backup_blkdev_restore_sh << 'EOF'\n${backup_blkdev_restore_sh_plain} \nEOF" -i "$plainfile"
+	sed  -E "/^read -d '' backup_create_lvm_sh << 'EOF'$/,/^EOF$/c\read -d '' backup_create_lvm_sh << 'EOF'\n${backup_create_lvm_sh_plain} \nEOF" -i "$plainfile"
+	sed  -E "/^read -d '' backup_create_sh << 'EOF'$/,/^EOF$/c\read -d '' backup_create_sh << 'EOF'\n${backup_create_sh_plain} \nEOF" -i "$plainfile"
+	sed  -E "/^read -d '' backup_mount_sh << 'EOF'$/,/^EOF$/c\read -d '' backup_mount_sh << 'EOF'\n${backup_mount_sh_plain} \nEOF" -i "$plainfile"
+fi
+
+if [[  $TOBASE64 ]]; then
+    base64file=$(basename -s .sh "$0").base64.sh
+	cat $(basename "$0") > "$base64file"
+	chmod +x "$base64file"
+	# first sed is for trimming, second for correct replacing in next block
+	borg_id_rsa_pub_base64=$(base64 <<< ${borg_id_rsa_pub} |  sed  -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}'  | sed 's/\\/&&/g;s/^[[:blank:]]/\\&/;s/$/\\/')
+	borg_id_rsa_base64=$(base64 <<< ${borg_id_rsa} |  sed  -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}'  | sed 's/\\/&&/g;s/^[[:blank:]]/\\&/;s/$/\\/')
+	backup_create_sh_base64=$(base64 <<< ${backup_create_sh} |  sed  -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}'  | sed 's/\\/&&/g;s/^[[:blank:]]/\\&/;s/$/\\/')
+	backup_create_lvm_sh_base64=$(base64 <<< ${backup_create_lvm_sh} |  sed  -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}'  | sed 's/\\/&&/g;s/^[[:blank:]]/\\&/;s/$/\\/')
+	backup_mount_sh_base64=$(base64 <<< ${backup_mount_sh} |  sed  -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}'  | sed 's/\\/&&/g;s/^[[:blank:]]/\\&/;s/$/\\/')
+	backup_blkdev_create_sh_base64=$(base64 <<< ${backup_blkdev_create_sh} |  sed  -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}'  | sed 's/\\/&&/g;s/^[[:blank:]]/\\&/;s/$/\\/')
+	backup_blkdev_restore_sh_base64=$(base64 <<< ${backup_blkdev_restore_sh} |  sed  -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}'  | sed 's/\\/&&/g;s/^[[:blank:]]/\\&/;s/$/\\/')
+	
+	sed  -e "/^read -d '' borg_id_rsa_pub << 'EOF'$/,/^EOF$/c\read -d '' borg_id_rsa_pub << 'EOF'\n${borg_id_rsa_pub_base64} \nEOF" -i "$base64file"
+	sed  -e "/^read -d '' borg_id_rsa << 'EOF'$/,/^EOF$/c\read -d '' borg_id_rsa << 'EOF'\n${borg_id_rsa_base64} \nEOF" -i "$base64file"
+	sed  -e "/^read -d ''  backup_blkdev_create_sh << 'EOF'$/,/^EOF$/c\read -d ''  backup_blkdev_create_sh << 'EOF'\n${backup_blkdev_create_sh_base64} \nEOF" -i "$base64file"
+	sed  -e "/^read -d ''  backup_blkdev_restore_sh << 'EOF'$/,/^EOF$/c\read -d ''  backup_blkdev_restore_sh << 'EOF'\n${backup_blkdev_restore_sh_base64} \nEOF" -i "$base64file"
+	sed  -e "/^read -d '' backup_create_lvm_sh << 'EOF'$/,/^EOF$/c\read -d '' backup_create_lvm_sh << 'EOF'\n${backup_create_lvm_sh_base64} \nEOF" -i "$base64file"
+	sed  -e "/^read -d '' backup_create_sh << 'EOF'$/,/^EOF$/c\read -d '' backup_create_sh << 'EOF'\n${backup_create_sh_base64} \nEOF" -i "$base64file"
+	sed  -e "/^read -d '' backup_mount_sh << 'EOF'$/,/^EOF$/c\read -d '' backup_mount_sh << 'EOF'\n${backup_mount_sh_base64} \nEOF" -i "$base64file"
+	
 fi
