@@ -1,11 +1,16 @@
-#!/bin/python3
+#!/usr/bin/env python3
+#
+# This is htm-to-xlsx converter for " My Veeam Report"  (https://gist.github.com/smasterson/9136468)
+#
+
 import os
 import sys
 import pandas as pd
 import xlsxwriter
 
 infile=os.path.abspath(sys.argv[1])
-outfile=os.path.abspath(sys.argv[2])
+
+outfile="{}.xlsx".format(os.path.splitext(infile)[0])
 
 pd.option_context('display.max_colwidth', None)
 
@@ -34,5 +39,3 @@ for i in range(1, len(df)-1):
     else:
         pass
 writer.close()
-
-
