@@ -11,15 +11,42 @@ import xlsxwriter
 infile=os.path.abspath(sys.argv[1])
 
 outfile="{}.xlsx".format(os.path.splitext(infile)[0])
-
+xl=xlsxwriter
 if os.path.isfile(outfile):
     print("[Exit] File exists: {}.".format(outfile))
     sys.exit(0)
 
-pd.option_context('display.max_colwidth', None)
-
 df = pd.read_html(infile)
+
 writer = pd.ExcelWriter(outfile, engine='xlsxwriter')
+workbook  = writer.book
+header0_format = workbook.add_format({
+    'bold': True})
+
+header_format = workbook.add_format({
+    'bold': True,
+    'text_wrap': False,
+    'valign': 'top',
+    'bg_color': '#D7E4BC',
+    'border': 1})
+
+row1_format = workbook.add_format({
+    'bold': False,
+    'text_wrap': False,
+    'valign': 'top',
+    'bg_color': '#FFFFFF',
+    'border': 1,
+    'border_color': '#A0A0A0'})
+
+row2_format = workbook.add_format({
+    'bold': False,
+    'text_wrap': False,
+    'valign': 'top',
+    'bg_color': '#F5F5F5',
+    'border': 1,
+    'border_color': '#A0A0A0'})
+
+
 
 df[0].to_excel(writer, sheet_name="Report Info", index = False)
 for i in range(1, len(df)-1):
@@ -37,11 +64,26 @@ for i in range(1, len(df)-1):
 
             # add title
             ws = writer.book.get_worksheet_by_name(shortname)
-            ws.write('A1', fullname)
+            ws.write('A1', fullname, header0_format)
+            
+            # title style
+            for col_num, value in enumerate(df[i+1].columns.values):
+                ws.write(1, col_num , value, header_format)
+            
+            # rows style    
+            for row_num in range(0, len(df[i+1])):
+                for col_num, value in enumerate(df[i+1].values[row_num]):
+                    if row_num % 2 == 0:
+                        ws.write(row_num+2, col_num , value, row1_format)
+                    else:
+                        ws.write(row_num+2, col_num , value, row2_format)
         except:
             pass
     else:
         pass
+
+
+
 writer.close()
 print("[Save] File: {}.".format(outfile))
-sys.exit(0
+sys.exit(0)
