@@ -48,13 +48,13 @@ row2_format = workbook.add_format({
 
 
 
-df[0].to_excel(writer, sheet_name="Report Info", index = False)
+#df[0].to_excel(writer, sheet_name="Report Info", index = False)
 for i in range(1, len(df)-1):
     if df[i].shape[1] == 1 and df[i+1].shape[1] > 1:
         fullname=str(df[i].loc[0][0])
         shortname=fullname[0:30].replace("/"," ")
         try:
-            df[i+1].to_excel(writer, sheet_name="{}".format(shortname), startrow=1, index = False, na_rep='NaN')
+            df[i+1].to_excel(writer, sheet_name="{}".format(shortname), startrow=1, index = False, na_rep='')
 
             # adjust col width
             for column in df[i+1]:
@@ -74,9 +74,14 @@ for i in range(1, len(df)-1):
             for row_num in range(0, len(df[i+1])):
                 for col_num, value in enumerate(df[i+1].values[row_num]):
                     if row_num % 2 == 0:
-                        ws.write(row_num+2, col_num , value, row1_format)
+                        row_format=row1_format
                     else:
-                        ws.write(row_num+2, col_num , value, row2_format)
+                        row_format=row2_format
+                    # to avoid empty cell    
+                    try:
+                        ws.write(row_num+2, col_num , value, row_format)
+                    except:
+                        ws.write(row_num+2, col_num , '', row_format)
         except:
             pass
     else:
@@ -87,3 +92,4 @@ for i in range(1, len(df)-1):
 writer.close()
 print("[Save] File: {}.".format(outfile))
 sys.exit(0)
+
