@@ -12,6 +12,10 @@ infile=os.path.abspath(sys.argv[1])
 
 outfile="{}.xlsx".format(os.path.splitext(infile)[0])
 
+if os.path.isfile(outfile):
+    print("[Exit] File exists: {}.".format(outfile))
+    sys.exit(0)
+
 pd.option_context('display.max_colwidth', None)
 
 df = pd.read_html(infile)
@@ -30,7 +34,7 @@ for i in range(1, len(df)-1):
                 column_length = max(df[i+1][column].astype(str).map(len).max(), len(column))
                 col_idx = df[i+1].columns.get_loc(column)
                 writer.sheets[shortname].set_column(col_idx, col_idx, column_length+2)
-            
+
             # add title
             ws = writer.book.get_worksheet_by_name(shortname)
             ws.write('A1', fullname)
@@ -39,3 +43,5 @@ for i in range(1, len(df)-1):
     else:
         pass
 writer.close()
+print("[Save] File: {}.".format(outfile))
+sys.exit(0
