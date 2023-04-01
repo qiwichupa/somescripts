@@ -15,7 +15,7 @@ jobs:
         include:
           - os: windows-2019
             PYTHON_VER: 3.8
-            CMD_BUILD: pyinstaller -F my_veeam_report_to_xlsx/my_veeam_report_to_xlsx.spec
+            CMD_BUILD: pyinstaller  my_veeam_report_to_xlsx/my_veeam_report_to_xlsx.spec
             OUT_FILE_NAME: my_veeam_report_to_xlsx.exe
             SAVE_AS_NAME: my_veeam_report_to_xlsx.exe
     steps:
