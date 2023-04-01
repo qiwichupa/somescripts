@@ -66,10 +66,6 @@ for i in range(1, len(df)-1):
             ws = writer.book.get_worksheet_by_name(shortname)
             ws.write('A1', fullname, header0_format)
             
-            # title style
-            for col_num, value in enumerate(df[i+1].columns.values):
-                ws.write(1, col_num , value, header_format)
-            
             # rows style    
             for row_num in range(0, len(df[i+1])):
                 for col_num, value in enumerate(df[i+1].values[row_num]):
@@ -82,6 +78,10 @@ for i in range(1, len(df)-1):
                         ws.write(row_num+2, col_num , value, row_format)
                     except:
                         ws.write(row_num+2, col_num , '', row_format)
+                        
+            # title style
+            for col_num, value in enumerate(df[i+1].columns.values):
+                ws.write(1, col_num , value, header_format)
         except:
             pass
     else:
