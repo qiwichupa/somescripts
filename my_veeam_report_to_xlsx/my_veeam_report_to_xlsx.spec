@@ -3,8 +3,8 @@
 block_cipher = None
 
 
-a = Analysis(['C:/Python/!_______/Python/my_veeam_report_to_xlsx.py'],
-             pathex=['C:\\Python\\build'],
+a = Analysis(['my_veeam_report_to_xlsx/my_veeam_report_to_xlsx.py'],
+             pathex=['build'],
              binaries=[],
              datas=[],
              hiddenimports=['xlsxwriter', 'lxml'],
